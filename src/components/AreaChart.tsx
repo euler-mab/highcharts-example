@@ -4,6 +4,13 @@ import Highcharts from 'highcharts'
 import HighchartsReact from 'highcharts-react-official'
 import { FC } from 'react'
 
+// Typescript: extend the Highcharts Chart type to hold custom labels
+declare module 'highcharts' {
+  interface Chart {
+    customLabels?: Highcharts.SVGElement[]
+  }
+}
+
 interface Parameters {
   px: number
   py: number
@@ -72,39 +79,46 @@ const AreaChart: FC = () => {
   const options: Highcharts.Options = {
     chart: {
       type: 'areaspline',
+      backgroundColor: '#0C1D2F',
       events: {
         render: function () {
-      const chart = this as Highcharts.Chart
-      const xAxis = chart.xAxis[0]
-      const labelY = chart.plotTop + chart.plotHeight + 15
+          const chart = this as Highcharts.Chart
+          const xAxis = chart.xAxis[0]
 
-      // Remove existing labels if any (to prevent duplicates)
-      if (chart.customLabels) {
-        chart.customLabels.forEach(label => label.destroy())
-      }
-      chart.customLabels = [
-        chart.renderer
-          .label('X liquidity', xAxis.toPixels(-0.5) - 50, labelY)
-          .css({ fontSize: '12px', color: '#A1ACB8' })
-          .add(),
-        chart.renderer
-          .label('Y liquidity', xAxis.toPixels(0.5) - 50, labelY)
-          .css({ fontSize: '12px', color: '#A1ACB8' })
-          .add()
-      ]
-      chart.customLabels.forEach(label => label.attr({ zIndex: 5 }))
-    }
+          // Y-coordinate: just above the x-axis (axis line), adjust for font
+          // The axis is at chart.plotTop + chart.plotHeight, axis labels slightly below that, axis title below that
+          // So place custom labels just above axis line, e.g. -32px from axis line
+          const labelY = chart.plotTop + chart.plotHeight - 32
+
+          // Remove existing labels if any (to prevent duplicates)
+          if (chart.customLabels) {
+            chart.customLabels.forEach(label => label.destroy())
+          }
+          chart.customLabels = [
+            chart.renderer
+              .label('X', xAxis.toPixels(-0.5) - 15, labelY)
+              .css({ fontSize: '13px', color: '#F7F7F8' })
+              .attr({ zIndex: 10 })
+              .add(),
+            chart.renderer
+              .label('Y', xAxis.toPixels(0.5) - 15, labelY)
+              .css({ fontSize: '13px', color: '#F7F7F8' })
+              .attr({ zIndex: 10 })
+              .add()
+          ]
+        }
       }
     },
-    title: { text: 'Price impact vs % of liquidity swapped out' },
+    title: { text: 'Price impact vs % of liquidity swapped out', style: { color: '#FFFFFF' } },
     xAxis: {
-      title: { text: '' },
+      title: { text: 'Liquidity', style: { color: '#F7F7F8', fontSize: '14px' } },
       min: -1,
       max: 1,
       tickLength: -5,
       tickInterval: 0.25,
       labels: {
         y: 15,
+        style: { color: '#A1ACB8',     fontFamily: 'Inter, sans-serif', },
         formatter: function () {
           const x = this.value as number
           if (x >= -1 && x <= 0) {
@@ -117,10 +131,12 @@ const AreaChart: FC = () => {
       }
     },
     yAxis: {
-      title: { text: 'Price Impact' },
+      title: { text: 'Price impact', style: { color: '#F7F7F8' } },
       min: 0,
       max: 1,
+        gridLineColor: '#10263E',
       labels: {
+        style: { color: '#A1ACB8' },
         formatter: function () {
           return `${Math.round((this.value as number) * 100)}%`
         }
@@ -128,7 +144,11 @@ const AreaChart: FC = () => {
     },
     tooltip: {
       shared: true,
-      valueDecimals: 4
+      valueDecimals: 4,
+      style: { color: '#A1ACB8' }
+    },
+    legend: {
+      itemStyle: { color: '#A1ACB8' }
     },
     plotOptions: {
       areaspline: {
@@ -152,7 +172,7 @@ const AreaChart: FC = () => {
   }
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', background: '#0C1D2F', padding: '1rem' }}>
       <div style={{ maxWidth: 800, width: '100%' }}>
         <HighchartsReact highcharts={Highcharts} options={options} />
       </div>
