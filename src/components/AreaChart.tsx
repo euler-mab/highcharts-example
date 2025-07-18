@@ -1,8 +1,11 @@
 "use client";
 
+import React, { useState } from "react";
+import { FC } from "react";
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
-import { FC } from "react";
+import { Slider } from "@eulerxyz/euler-materials";
+// Or whatever components are provided by the package
 
 // Typescript: extend the Highcharts Chart type to hold custom labels
 declare module "highcharts" {
@@ -111,13 +114,15 @@ function generateSeriesData(
 }
 
 const AreaChart: FC = () => {
+  const [cx, setCx] = useState(0); // initial value 0.5
+  const [cy, setCy] = useState(0); // initial value 0.5
   const parameters: Parameters = {
     x0: 5,
     y0: 10,
     px: 2,
     py: 1,
-    cx: 0.5,
-    cy: 0.9,
+    cx,
+    cy,
   };
 
   const current: State = {
@@ -353,10 +358,14 @@ const AreaChart: FC = () => {
             Price impact: ${((1 - point.y) * 100).toFixed(2)}%            
             <br/>
             <br/>
+            Swap amounts:
+            <br/>
             ${liquidityLabelX}: ${liquidityValueX}
             <br/>
             ${liquidityLabelY}: ${liquidityValueY}            
+            <br/>            
             <br/>
+            Exchange rates:
             <br/>
             ${"X/Y"}: ${priceXY}
             <br/>
@@ -391,18 +400,61 @@ const AreaChart: FC = () => {
       },
     ],
   };
-
+  console.log("cx:", cx, "cy:", cy);
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        background: "#0C1D2F",
-        padding: "1rem",
-      }}
-    >
-      <div style={{ maxWidth: 800, width: "100%" }}>
-        <HighchartsReact highcharts={Highcharts} options={options} />
+    <div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          background: "#0C1D2F",
+          padding: "1rem",
+        }}
+      >
+        <div style={{ maxWidth: 800, width: "100%" }}>
+          <HighchartsReact highcharts={Highcharts} options={options} />
+        </div>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          background: "#0C1D2F",
+          padding: "1rem",
+        }}
+      >
+        <div
+          style={{ display: "flex", maxWidth: 800, width: "100%", gap: "2rem" }}
+        >
+          <div style={{ flex: 1 }}>
+            <div
+              style={{ textAlign: "left", color: "#A1ACB8", marginBottom: 4 }}
+            >
+              cx: {cx}
+            </div>
+            <Slider
+              value={cx}
+              setValue={(val) => setCx(Array.isArray(val) ? val[0] : val)}
+              min={0}
+              max={1}
+              step={0.0001}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div
+              style={{ textAlign: "right", color: "#A1ACB8", marginBottom: 4 }}
+            >
+              cy: {cy}
+            </div>
+            <Slider
+              value={cy}
+              setValue={(val) => setCy(Array.isArray(val) ? val[0] : val)}
+              min={0}
+              max={1}
+              step={0.0001}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
