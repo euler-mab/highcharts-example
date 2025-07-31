@@ -89,6 +89,74 @@ function priceImpactY(x: number, parameters: Parameters): number {
   return parameters.py / parameters.px / -dydxVal;
 }
 
+function cParamToConc(x: number): number {
+  // Hardcoded constants from Desmos
+  const rt = 0.625;
+  const ut = 0.95;
+  const us = 0.5;
+  const uc = 0.999;
+
+  // s = slope of linear segment
+  const s = rt / ut;
+
+  // Compute c using full Desmos formula (rMax = 1)
+  const termA = ut / rt;
+  const termB = (1 - rt) / (1 - ut);
+  const termC = (uc - ut) / (uc - us);
+  const termD = (ut - us) / (uc - us);
+  const termE = (1 - us) / (1 - uc);
+  const numerator = termA * termB * termC + termD - termE;
+  const denominator = 1 - termE;
+  const c = numerator / denominator;
+
+  // Compute b
+  const oneMinusUs = 1 - us;
+  const bNumerator = (1 - c) * oneMinusUs;
+  const bDenominator = (1 - rt) / (s * oneMinusUs) - (us - ut) / oneMinusUs - c;
+  const b = bNumerator / bDenominator;
+
+  // Enforce bounds
+  if (x < 0 || x > 1) {
+    return NaN;
+  }
+
+  // Piecewise function
+  if (x <= us) {
+    return rt + s * (x - ut);
+  } else {
+    const denom = 1 - (x - b);
+    const factor = c + (1 - c) * (oneMinusUs / denom);
+    return rt + s * (us - ut + (x - us) * factor);
+  }
+}
+
+function concToCParam(y: number, tolerance = 1e-9, maxIterations = 20): number {
+  let low = 0;
+  let high = 1;
+  let mid: number;
+
+  if (y < 0 || y > 1) {
+    return NaN;
+  }
+
+  for (let i = 0; i < maxIterations; i++) {
+    mid = (low + high) / 2;
+    const fMid = cParamToConc(mid);
+
+    if (Math.abs(fMid - y) < tolerance) {
+      return mid;
+    }
+
+    if (fMid < y) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+
+  return (low + high) / 2;
+}
+
 function generateSeriesData(
   fn: (x: number) => number,
   xStart: number,
@@ -114,15 +182,15 @@ function generateSeriesData(
 }
 
 const AreaChart: FC = () => {
-  const [cx, setCx] = useState(0); // initial value 0.5
-  const [cy, setCy] = useState(0); // initial value 0.5
+  const [concX, setConcX] = useState(0); // initial value 0.5
+  const [concY, setConcY] = useState(0); // initial value 0.5
   const parameters: Parameters = {
     x0: 5,
     y0: 10,
     px: 2,
     py: 1,
-    cx,
-    cy,
+    cx: concToCParam(concX),
+    cy: concToCParam(concY),
   };
 
   const current: State = {
@@ -370,6 +438,17 @@ const AreaChart: FC = () => {
             ${"X/Y"}: ${priceXY}
             <br/>
             ${"Y/X"}: ${priceYX}
+            <br/>            
+            <br/>
+            C params:
+            <br/>
+            ${"cx"}: ${concX}
+            <br/>
+            ${"cy"}: ${concY}
+            <br/>
+            ${"cxRaw"}: ${concToCParam(concX)}
+            <br/>
+            ${"cyRaw"}: ${concToCParam(concY)}
             </span>`;
           });
           return s;
@@ -400,7 +479,6 @@ const AreaChart: FC = () => {
       },
     ],
   };
-  console.log("cx:", cx, "cy:", cy);
   return (
     <div>
       <div
@@ -430,11 +508,11 @@ const AreaChart: FC = () => {
             <div
               style={{ textAlign: "left", color: "#A1ACB8", marginBottom: 4 }}
             >
-              cx: {cx}
+              concX: {concX}
             </div>
             <Slider
-              value={cx}
-              setValue={(val) => setCx(Array.isArray(val) ? val[0] : val)}
+              value={concX}
+              setValue={(val) => setConcX(Array.isArray(val) ? val[0] : val)}
               min={0}
               max={1}
               step={0.0001}
@@ -444,11 +522,11 @@ const AreaChart: FC = () => {
             <div
               style={{ textAlign: "right", color: "#A1ACB8", marginBottom: 4 }}
             >
-              cy: {cy}
+              concY: {concY}
             </div>
             <Slider
-              value={cy}
-              setValue={(val) => setCy(Array.isArray(val) ? val[0] : val)}
+              value={concY}
+              setValue={(val) => setConcY(Array.isArray(val) ? val[0] : val)}
               min={0}
               max={1}
               step={0.0001}
